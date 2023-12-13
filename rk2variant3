@@ -1,0 +1,139 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <iterator>
+#include <type_traits>
+using std::string;
+using std::vector;
+
+
+class ElectronicDevice 
+{
+protected:  // Защищенные данные для хранения бренда и модели устройства
+    string _brand;
+    string _model;
+
+public:  // Создаем конструктор для инициализации бренда и модели
+    ElectronicDevice(string brand, string model): _brand(brand), _model(model) {}
+    
+    virtual void display() const  // Виртуальная функция, выводящая информацию об устройстве
+    {
+        std::cout << "Brand of the " << deviceType() << " is '" << _brand
+        << "', its model is '" << _model << "'." << std::endl;
+    }
+    virtual string deviceType() const { return "-"; }
+    void setBrand(string brand) { _brand = brand; }
+    void setModel(string model) { _model = model; }
+    template <typename Type>
+    void setAttribute(Type value);
+};
+
+
+class Smartphone: public ElectronicDevice  // Наследование класса Smartphone от класса ElectronicDevice
+{
+public:
+    Smartphone(string brand, string model, string OS): ElectronicDevice(brand, model), _OS(OS) {}
+
+    void display() const  // Виртуальная функция, выводящая информацию о смартфоне
+    {
+        ElectronicDevice::display();
+        std::cout << "OS of the device is '" << _OS << "'.\n" << std::endl;
+    }
+    string deviceType() const { return "smartphone"; }
+    template <typename Type>
+    void setAttribute(Type value)
+    {
+        if (!std::is_same<Type, string>::value)
+            throw std::runtime_error("Inappropriate value type.");
+        _OS = value;
+    }
+
+private:
+    string _OS;
+};
+
+
+class Laptop: public ElectronicDevice  // Наследование класса Laptop от класса ElectronicDevice
+{
+public:
+    Laptop(string brand, string model, double screen): ElectronicDevice(brand, model), _screen(screen) {}
+
+    void display() const  // Виртуальная функция, выводящая информацию о ноутбуке
+    {
+        ElectronicDevice::display();
+        std::cout << "Screen size of the device is " << _screen << "''.\n" << std::endl;
+    }
+    string deviceType() const { return "laptop"; }
+    template <typename Type>
+    void setAttribute(Type value)
+    {
+        if (!std::is_same<Type, double>::value)
+            throw std::runtime_error("Inappropriate value type.");
+        _screen = value;
+    }
+
+private:
+    double _screen;
+};
+
+
+enum AttributeGenus { CBrand, CModel, COS, CScreen };
+
+template<typename AttributeType>
+void changeAttribute(ElectronicDevice *device, AttributeGenus attribute, AttributeType value)  // Функция, которая принимает указатель на базовый класс ElectronicDevice и изменяет ехо характеристики
+{
+    switch (attribute)
+    {
+        case CBrand:
+            if (!std::is_same<AttributeType, string>::value)
+            {
+                throw std::runtime_error("Inappropriate value type.");
+                return;
+            }
+                
+            device->setBrand(value);
+            break;
+
+        case CModel:
+            if (!std::is_same<AttributeType, string>::value)
+            {
+                throw std::runtime_error("Inappropriate value type.");
+                return;
+            }
+
+            device->setModel(value);
+            break;
+
+        case COS:
+        case CScreen:
+            if (attribute == COS && device->deviceType() != "smartphone" ||
+                attribute == CScreen && device->deviceType() != "laptop")
+            {
+                throw std::runtime_error("Inappropriate attribute type for this device.");
+                return;
+            }  
+            
+            device->setAttribute<AttributeType>(value);
+            break;
+
+        default:
+            throw std::runtime_error("Irrelevant attribute type.");
+            return;
+    }
+}
+
+
+int main()
+{
+    Laptop laptop1("Xiaomi", "NXL23F92JS", 17.3);
+    Smartphone smartphone1("Apple", "X", "Linux");
+    Smartphone smartphone2("Samsung", "A100", "MacOS");
+    vector<ElectronicDevice*> devices = {&laptop1, &smartphone1, &smartphone2};  // Создание STL контейнера
+
+    for (auto current = std::begin(devices), end = std::end(devices); current != end; ++current)  // Использование STL-итераторов для итерации по контейнеру
+    {
+        (*current)->display();
+    }
+
+    return 0;
+}
